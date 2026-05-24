@@ -93,6 +93,9 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
     parser.add_argument('--des', type=str, default='test', help='exp description')
     parser.add_argument('--loss', type=str, default='MSE', help='loss function')
+    parser.add_argument('--loss_type', type=str, default='regression',
+                        choices=['regression', 'classification'],
+                        help='loss type: regression (MSE) or classification (BCE)')
     parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
     parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 

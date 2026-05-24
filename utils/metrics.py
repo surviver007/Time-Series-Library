@@ -31,6 +31,19 @@ def MSPE(pred, true):
     return np.mean(np.square((true - pred) / true))
 
 
+def accuracy(pred, true):
+    """分类准确率: pred/logits -> sigmoid -> >0.5 -> 与 true(0/1) 比较"""
+    pred_label = (pred >= 0.5).astype(int)
+    true_label = true.astype(int)
+    return np.mean(pred_label == true_label)
+
+
+def auc(pred, true):
+    """AUC-ROC: pred 为概率值 (已过 sigmoid), true 为 0/1"""
+    from sklearn.metrics import roc_auc_score
+    return roc_auc_score(true.astype(int), pred)
+
+
 def metric(pred, true):
     mae = MAE(pred, true)
     mse = MSE(pred, true)
@@ -39,3 +52,20 @@ def metric(pred, true):
     mspe = MSPE(pred, true)
 
     return mae, mse, rmse, mape, mspe
+
+
+def classification_metric(pred_logits, true):
+    """分类评估: accuracy + AUC"""
+    from scipy.special import expit as sigmoid
+    pred_logits = pred_logits.reshape(-1)
+    true = true.reshape(-1)
+    prob = sigmoid(pred_logits)
+    pred_label = (prob >= 0.5).astype(int)
+    true_label = true.astype(int)
+    acc = np.mean(pred_label == true_label)
+    try:
+        from sklearn.metrics import roc_auc_score
+        auc_val = roc_auc_score(true_label, prob)
+    except ValueError:
+        auc_val = float('nan')
+    return acc, auc_val

@@ -290,6 +290,11 @@ class Dataset_Custom(Dataset):
         else:
             data = df_data.values
 
+        # 分类模式: target 列 (最后一列) 二值化
+        if getattr(self.args, 'loss_type', 'regression') == 'classification':
+            self.raw_target = df_data.values[:, -1].copy()
+            data[:, -1] = (self.raw_target > 0).astype(np.float32)
+
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:

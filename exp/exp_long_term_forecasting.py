@@ -1,7 +1,7 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
-from utils.metrics import metric
+from utils.metrics import metric, classification_metric
 import torch
 import torch.nn as nn
 from torch import optim
@@ -35,8 +35,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         return model_optim
 
     def _select_criterion(self):
-        criterion = nn.MSELoss()
-        return criterion
+        if getattr(self.args, 'loss_type', 'regression') == 'classification':
+            return nn.BCEWithLogitsLoss()
+        return nn.MSELoss()
  
 
     def vali(self, vali_data, vali_loader, criterion):
@@ -252,16 +253,28 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         else:
             dtw = 'Not calculated'
 
-        mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
+        # 分类模式: accuracy + AUC
+        if getattr(self.args, 'loss_type', 'regression') == 'classification':
+            acc, auc_val = classification_metric(preds, trues)
+            print('accuracy:{}, auc:{}'.format(acc, auc_val))
+        else:
+            mae, mse, rmse, mape, mspe = metric(preds, trues)
+            print('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
+
         f = open("result_long_term_forecast.txt", 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
+        if getattr(self.args, 'loss_type', 'regression') == 'classification':
+            f.write('accuracy:{}, auc:{}'.format(acc, auc_val))
+        else:
+            f.write('mse:{}, mae:{}, dtw:{}'.format(mse, mae, dtw))
         f.write('\n')
         f.write('\n')
         f.close()
 
-        np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
+        if getattr(self.args, 'loss_type', 'regression') == 'classification':
+            np.save(folder_path + 'metrics.npy', np.array([acc, auc_val]))
+        else:
+            np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
         np.save(folder_path + 'pred.npy', preds)
         np.save(folder_path + 'true.npy', trues)
 
